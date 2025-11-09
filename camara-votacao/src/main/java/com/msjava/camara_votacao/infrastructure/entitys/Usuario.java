@@ -32,8 +32,8 @@ public class Usuario {
     @Column(name = "nome", nullable = false, length = 150)
     private String nome;
 
-    @Column(name = "numero", unique = true, nullable = false)
-    private int numero;
+    @Column(name = "cpf", unique = true, nullable = false)
+    private String cpf;
 
     @Column(name = "partido", nullable = false, length = 150)
     private String partido;

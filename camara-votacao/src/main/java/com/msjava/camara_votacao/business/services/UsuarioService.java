@@ -17,7 +17,6 @@ import com.msjava.camara_votacao.infrastructure.repository.UsuarioRepository;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-
     public UsuarioService(UsuarioRepository repository) {
         this.usuarioRepository = repository;
     }
@@ -30,8 +29,9 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNome(request.getNome());
         usuario.setPartido(request.getPartido());
-        usuario.setNumero(request.getNumero());
+        usuario.setCpf(request.getCpf());
         usuario.setSenha(request.getSenha());
+        
         usuario.setTipo(request.getTipo());
 
         Usuario usuarioSalvo = usuarioRepository.saveAndFlush(usuario);
@@ -56,6 +56,7 @@ public class UsuarioService {
             .orElseThrow(() -> new RuntimeErrorException(null, "Usuário não encontrado com ID: " + id));
         
         usuario.setNome(request.getNome());
+        usuario.setCpf(request.getCpf());
         usuario.setPartido(request.getPartido());
         usuario.setTipo(request.getTipo());
 
@@ -92,7 +93,7 @@ public class UsuarioService {
         UsuarioDto dto = new UsuarioDto();
         dto.setId(usuario.getId());
         dto.setNome(usuario.getNome());
-        dto.setNumero(usuario.getNumero());
+        dto.setCpf(usuario.getCpf());
         dto.setPartido(usuario.getPartido());
         dto.setTipo(usuario.getTipo());
         return dto;

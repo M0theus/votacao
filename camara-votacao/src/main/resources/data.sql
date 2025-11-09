@@ -1,0 +1,8 @@
+--INSERT IGNORE INTO usuarios (nome, partido, numero, senha, tipo) 
+--VALUES (
+--    'Admin', 
+--    'ADMIN', 
+--    00,
+--    '$2a$10$N9qo8uLOickgx2ZMRZoMye.KbwDr8x6Pj2lC5P3JY7QZz9VkQY5W.',
+--    'ADMINISTRADOR'
+--);

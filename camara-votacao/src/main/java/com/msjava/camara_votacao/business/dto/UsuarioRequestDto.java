@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class UsuarioRequestDto {
     private String nome;
-    private int numero;
+    private String cpf;
     private String partido;
     private String senha;
     private TipoUsuario tipo;
