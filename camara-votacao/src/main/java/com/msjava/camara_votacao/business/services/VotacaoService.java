@@ -23,6 +23,10 @@ public class VotacaoService {
     private final UsuarioRepository usuarioRepository;
 
     public VotacaoResponseDTO registrarVoto(VotacaoRequestDTO request) {
+        if (!isVotacaoAtiva()) {
+            throw new RuntimeException("Votação não está ativa. Não é possível votar.");
+        }
+
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -41,6 +45,10 @@ public class VotacaoService {
     }
 
     public VotacaoResponseDTO marcarAusente(Integer usuarioId) {
+        if (!isVotacaoAtiva()) {
+            throw new RuntimeException("Votação não está ativa. Não é possível marcar ausente.");
+        }
+
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -71,7 +79,6 @@ public class VotacaoService {
             .stream()
             .map(this::toDTO)
             .collect(Collectors.toList());
-            
     }
 
     public void finalizarVotacao() {
@@ -84,6 +91,17 @@ public class VotacaoService {
         votacaoRepository.deleteAll();
     }
 
+    private boolean isVotacaoAtiva() {
+        List<Votacao> votos = votacaoRepository.findAll();
+        
+        if (votos.isEmpty()) {
+            return true;
+        }
+        
+        Votacao ultimoVoto = votos.get(votos.size() - 1);
+        return ultimoVoto.getVotacaoAtiva();
+    }
+
     private VotacaoResponseDTO toDTO(Votacao votacao) {
         VotacaoResponseDTO dto = new VotacaoResponseDTO();
         dto.setId(votacao.getId());
@@ -91,6 +109,7 @@ public class VotacaoService {
         dto.setUsuarioNome(votacao.getUsuario().getNome());
         dto.setVoto(votacao.getVoto());
         dto.setDataVoto(votacao.getDataVoto());
+        dto.setVotacaoAtiva(votacao.getVotacaoAtiva());
         return dto;
     }
 }

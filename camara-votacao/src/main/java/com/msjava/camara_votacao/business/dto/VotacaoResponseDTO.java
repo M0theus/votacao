@@ -11,5 +11,6 @@ public class VotacaoResponseDTO {
     private String usuarioNome;
     private TipoVoto voto;
     private LocalDateTime dataVoto;
+    public boolean votacaoAtiva;
 
 }
