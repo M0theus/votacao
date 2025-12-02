@@ -1,16 +1,18 @@
 package com.msjava.camara_votacao.infrastructure.entitys;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-import jakarta.persistence.CascadeType;
+import com.msjava.camara_votacao.business.enums.TipoVoto;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -25,26 +27,30 @@ import lombok.Setter;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "votacoes")
-public class Votacao {
+@Table(name = "usuarios_votacoes")
+public class UsuarioVotacao {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    
-    @Column(name = "data_criacao")
-    private LocalDateTime dataCriacao;
-    
-    @Column(name = "data_encerramento")
-    private LocalDateTime dataEncerramento;
-    
-    @Column(name = "votacao_ativa", nullable = false)
-    private Boolean votacaoAtiva = true;
-    
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+
+    @ManyToOne
+    @JoinColumn(name = "votacao_id", nullable = false)
+    private Votacao votacao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 3)
+    private TipoVoto voto;
+
+    @Column(name = "data_voto")
+    private LocalDateTime dataVoto;
+
     @PrePersist
     public void prePersist() {
-        this.dataCriacao = LocalDateTime.now();
+        this.dataVoto = LocalDateTime.now();
     }
 
-    @OneToMany(mappedBy = "votacao", cascade = CascadeType.ALL)
-    private List<UsuarioVotacao> votos = new ArrayList<>();
 }

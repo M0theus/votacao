@@ -1,62 +1,42 @@
 package com.msjava.camara_votacao.controller;
 
-import java.util.List;
-
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.msjava.camara_votacao.business.dto.ResultadoVotacaoDTO;
 import com.msjava.camara_votacao.business.dto.VotacaoRequestDTO;
 import com.msjava.camara_votacao.business.dto.VotacaoResponseDTO;
 import com.msjava.camara_votacao.business.services.VotacaoService;
-
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/votacao")
+@RequestMapping("/api/votacoes")
 @RequiredArgsConstructor
 public class VotacaoController {
     private final VotacaoService votacaoService;
-
-    @PostMapping("/votar")
-    public ResponseEntity<VotacaoResponseDTO> votar(@RequestBody VotacaoRequestDTO request) {
-        VotacaoResponseDTO response = votacaoService.registrarVoto(request);
-        return ResponseEntity.ok(response);
+    
+    @PostMapping("/criar")
+    public ResponseEntity<VotacaoResponseDTO> criarVotacao(@RequestBody VotacaoRequestDTO request) {
+        return ResponseEntity.ok(votacaoService.criarVotacao(request.getUsuarioId()));
     }
-
-    @PostMapping("/ausente/{usuarioId}")
-    public ResponseEntity<VotacaoResponseDTO> marcarAusente(@PathVariable Integer usuarioId) {
-        VotacaoResponseDTO response = votacaoService.marcarAusente(usuarioId);
-        return ResponseEntity.ok(response);
+    
+    @PostMapping("/encerrar")
+    public ResponseEntity<VotacaoResponseDTO> encerrarVotacao(
+            @RequestBody VotacaoRequestDTO request) {
+        return ResponseEntity.ok(votacaoService.encerrarVotacao(request.getUsuarioId()));
     }
-
-    @GetMapping("/resultado")
-    public ResponseEntity<ResultadoVotacaoDTO> obterResultado() {
-        ResultadoVotacaoDTO resultado = votacaoService.obterResultado();
-        return ResponseEntity.ok(resultado);
+    
+    @GetMapping
+    public ResponseEntity<List<VotacaoResponseDTO>> listarTodas() {
+        return ResponseEntity.ok(votacaoService.listarTodasVotacoes());
     }
-
-    @GetMapping("/votos")
-    public ResponseEntity<List<VotacaoResponseDTO>> listarVotos() {
-        List<VotacaoResponseDTO> votos = votacaoService.listarVotos();
-        return ResponseEntity.ok(votos);
+    
+    @GetMapping("/data")
+    public ResponseEntity<List<VotacaoResponseDTO>> buscarPorData(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime data) {
+        return ResponseEntity.ok(votacaoService.buscarPorData(data));
     }
-
-    @PostMapping("/finalizar")
-    public ResponseEntity<String> finalizarVotacao() {
-        votacaoService.finalizarVotacao();
-        return ResponseEntity.ok("Votação finalizada");
-    }
-
-    @PostMapping("/zerar")
-    public ResponseEntity<String> zerarVotacao() {
-        votacaoService.zerarVotacao();
-        return ResponseEntity.ok("Votação zerada");
-    }
-
 }

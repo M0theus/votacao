@@ -1,115 +1,107 @@
 package com.msjava.camara_votacao.business.services;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 
-import com.msjava.camara_votacao.business.dto.ResultadoVotacaoDTO;
-import com.msjava.camara_votacao.business.dto.VotacaoRequestDTO;
 import com.msjava.camara_votacao.business.dto.VotacaoResponseDTO;
-import com.msjava.camara_votacao.business.enums.TipoVoto;
-import com.msjava.camara_votacao.infrastructure.entitys.Usuario;
 import com.msjava.camara_votacao.infrastructure.entitys.Votacao;
-import com.msjava.camara_votacao.infrastructure.repository.UsuarioRepository;
 import com.msjava.camara_votacao.infrastructure.repository.VotacaoRepository;
-
+import com.msjava.camara_votacao.infrastructure.repository.UsuarioRepository;
+import com.msjava.camara_votacao.infrastructure.repository.UsuarioVotacaoRepository;
+import com.msjava.camara_votacao.business.enums.TipoUsuario;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class VotacaoService {
     private final VotacaoRepository votacaoRepository;
     private final UsuarioRepository usuarioRepository;
-
-    public VotacaoResponseDTO registrarVoto(VotacaoRequestDTO request) {
-        if (!isVotacaoAtiva()) {
-            throw new RuntimeException("Votação não está ativa. Não é possível votar.");
-        }
-
-        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+    private final UsuarioVotacaoRepository usuarioVotacaoRepository;
+    
+    // Criar nova votação (apenas Presidente/ADM)
+    public VotacaoResponseDTO criarVotacao(Integer usuarioId) {
+        // Verificar permissão
+        var criador = usuarioRepository.findById(usuarioId)
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        votacaoRepository.findByUsuarioId(request.getUsuarioId())
-            .ifPresent(v -> {
-                throw new RuntimeException("Usuário já votou");
-            });
-
-        Votacao votacao = new Votacao();
-        votacao.setUsuario(usuario);
-        votacao.setVoto(request.getVoto());
-        votacao.setVotacaoAtiva(true);
-
-        Votacao votacaoSalva = votacaoRepository.save(votacao);
-        return toDTO(votacaoSalva);
-    }
-
-    public VotacaoResponseDTO marcarAusente(Integer usuarioId) {
-        if (!isVotacaoAtiva()) {
-            throw new RuntimeException("Votação não está ativa. Não é possível marcar ausente.");
+        
+        if (!criador.getTipo().equals(TipoUsuario.PRESIDENTE) && 
+            !criador.getTipo().equals(TipoUsuario.ADMINISTRADOR)) {
+            throw new RuntimeException("Apenas Presidente ou Administrador podem criar votações");
         }
-
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        votacaoRepository.findByUsuarioId(usuarioId)
-            .ifPresent(v -> {
-                throw new RuntimeException("Usuário já foi processado");
-            });
-
-        Votacao votacao = new Votacao();
-        votacao.setUsuario(usuario);
-        votacao.setVoto(TipoVoto.AUSENTE);
-        votacao.setVotacaoAtiva(true);
-
+        
+        // Verificar se já existe votação ativa
+        boolean existeAtiva = votacaoRepository.findByVotacaoAtivaTrue().size() > 0;
+        if (existeAtiva) {
+            throw new RuntimeException("Já existe uma votação ativa. Encerre-a antes de criar uma nova.");
+        }
+        
+        // Criar nova votação
+        Votacao votacao = Votacao.builder()
+            .votacaoAtiva(true)
+            .build();
+        
         Votacao votacaoSalva = votacaoRepository.save(votacao);
-        return toDTO(votacaoSalva);
+        return toVotacaoDTO(votacaoSalva);
     }
 
-    public ResultadoVotacaoDTO obterResultado() {
-        Long totalSim = votacaoRepository.countByVoto(TipoVoto.SIM);
-        Long totalNao = votacaoRepository.countByVoto(TipoVoto.NAO);
-        Long totalAusente = votacaoRepository.countByVoto(TipoVoto.AUSENTE);
-
-        return new ResultadoVotacaoDTO(totalSim, totalNao, totalAusente);
+    public VotacaoResponseDTO encerrarVotacao(Integer usuarioId) {
+        // Verificar permissão
+        var encerrador = usuarioRepository.findById(usuarioId)
+            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        
+        if (!encerrador.getTipo().equals(TipoUsuario.PRESIDENTE) && 
+            !encerrador.getTipo().equals(TipoUsuario.ADMINISTRADOR)) {
+            throw new RuntimeException("Apenas Presidente ou ADM podem encerrar votações");
+        }
+        
+        // Buscar a votação ativa
+        Votacao votacao = getVotacaoAtiva();
+        
+        // Encerrar
+        votacao.setVotacaoAtiva(false);
+        votacao.setDataEncerramento(LocalDateTime.now());
+        
+        Votacao votacaoSalva = votacaoRepository.save(votacao);
+        return toVotacaoDTO(votacaoSalva);
     }
-
-    public List<VotacaoResponseDTO> listarVotos() {
-        return votacaoRepository.findAll()
-            .stream()
-            .map(this::toDTO)
+    
+    // Listar todas as votações
+    public List<VotacaoResponseDTO> listarTodasVotacoes() {
+        return votacaoRepository.findAll().stream()
+            .map(this::toVotacaoDTO)
             .collect(Collectors.toList());
     }
-
-    public void finalizarVotacao() {
-        List<Votacao> votacoesAtivas = votacaoRepository.findByVotacaoAtiva(true);
-        votacoesAtivas.forEach(v -> v.setVotacaoAtiva(false));
-        votacaoRepository.saveAll(votacoesAtivas);
+    
+    // Buscar votação por data
+    public List<VotacaoResponseDTO> buscarPorData(LocalDateTime data) {
+        return votacaoRepository.findByDataCriacao(data).stream()
+            .map(this::toVotacaoDTO)
+            .collect(Collectors.toList());
     }
-
-    public void zerarVotacao() {
-        votacaoRepository.deleteAll();
-    }
-
-    private boolean isVotacaoAtiva() {
-        List<Votacao> votos = votacaoRepository.findAll();
-        
-        if (votos.isEmpty()) {
-            return true;
-        }
-        
-        Votacao ultimoVoto = votos.get(votos.size() - 1);
-        return ultimoVoto.getVotacaoAtiva();
-    }
-
-    private VotacaoResponseDTO toDTO(Votacao votacao) {
+    
+    // Método auxiliar para converter entity para DTO
+    private VotacaoResponseDTO toVotacaoDTO(Votacao votacao) {
         VotacaoResponseDTO dto = new VotacaoResponseDTO();
         dto.setId(votacao.getId());
-        dto.setUsuarioId(votacao.getUsuario().getId());
-        dto.setUsuarioNome(votacao.getUsuario().getNome());
-        dto.setVoto(votacao.getVoto());
-        dto.setDataVoto(votacao.getDataVoto());
+        dto.setDataCriacao(votacao.getDataCriacao());
+        dto.setDataEncerramento(votacao.getDataEncerramento());
         dto.setVotacaoAtiva(votacao.getVotacaoAtiva());
+        
+        // Contar votos para esta votação
+        Long totalVotos = usuarioVotacaoRepository.countByVotacaoId(votacao.getId());
+        dto.setTotalVotos(totalVotos);
+        
         return dto;
+    }
+    
+    private Votacao getVotacaoAtiva() {
+        List<Votacao> ativas = votacaoRepository.findByVotacaoAtivaTrue();
+        if (ativas.isEmpty()) {
+            throw new RuntimeException("Não há votação ativa no momento");
+        }
+        return ativas.get(0); // Retorna a única votação ativa
     }
 }

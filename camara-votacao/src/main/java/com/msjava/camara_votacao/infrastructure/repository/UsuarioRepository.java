@@ -14,4 +14,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer>{
     boolean existsByNome(String nome);
     java.util.List<Usuario> findByPartido(String partido);
     java.util.List<Usuario> findByTipo(TipoUsuario tipoUsuario);
+    Long countByTipo(TipoUsuario tipoUsuario);
 }

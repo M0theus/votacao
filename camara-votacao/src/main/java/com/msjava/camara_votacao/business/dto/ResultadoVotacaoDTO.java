@@ -9,10 +9,10 @@ public class ResultadoVotacaoDTO {
     private Long ausentes;
     private Long totalUsuarios;
     
-    public ResultadoVotacaoDTO(Long totalSim, Long totalNao, Long totalAusente) {
+    public ResultadoVotacaoDTO(Long totalSim, Long totalNao, Long totalAusente, long totalUsuarios) {
         this.sim = totalSim;
         this.nao = totalNao;
         this.ausentes = totalAusente;
-        this.totalUsuarios = totalSim + totalNao + totalAusente;
+        this.totalUsuarios = totalUsuarios;
     }
 }
