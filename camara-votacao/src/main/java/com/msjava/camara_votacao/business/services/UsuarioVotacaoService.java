@@ -29,9 +29,10 @@ public class UsuarioVotacaoService {
     
     // Registrar voto (agora sem precisar do votacaoId no request)
     public UsuarioVotacaoResponseDTO registrarVoto(UsuarioVotacaoRequestDTO request) {
-        // Buscar usuário
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        validarPermissaoParaVotar(usuario);
         
         // Buscar a ÚNICA votação ativa
         Votacao votacaoAtiva = getVotacaoAtiva();
@@ -70,6 +71,8 @@ public class UsuarioVotacaoService {
         
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        validarPermissaoParaVotar(usuario);
         
         UsuarioVotacao ausente = UsuarioVotacao.builder()
             .usuario(usuario)
@@ -97,16 +100,21 @@ public class UsuarioVotacaoService {
         Long totalSim = usuarioVotacaoRepository.countByVotacaoIdAndVoto(votacaoId, TipoVoto.SIM);
         Long totalNao = usuarioVotacaoRepository.countByVotacaoIdAndVoto(votacaoId, TipoVoto.NAO);
         Long totalAusente = usuarioVotacaoRepository.countByVotacaoIdAndVoto(votacaoId, TipoVoto.AUSENTE);
+        Long totalAbstencao = usuarioVotacaoRepository.countByVotacaoIdAndVoto(votacaoId, TipoVoto.ABSTENCAO);
         
-        Long totalUsuarios = usuarioRepository.countByTipo(TipoUsuario.NORMAL);
+        Long totalNormal = usuarioRepository.countByTipo(TipoUsuario.NORMAL);
+        Long totalPresidente = usuarioRepository.countByTipo(TipoUsuario.PRESIDENTE);
+        Long totalUsuarios = totalNormal + totalPresidente;
 
         
-        return new ResultadoVotacaoDTO(totalSim, totalNao, totalAusente, totalUsuarios);
+        return new ResultadoVotacaoDTO(totalSim, totalNao, totalAbstencao, totalAusente, totalUsuarios);
     }
 
     private ResultadoVotacaoDTO criarResultadoVazio() {
-        Long totalUsuarios = usuarioRepository.countByTipo(TipoUsuario.NORMAL);
-        return new ResultadoVotacaoDTO(0L, 0L, 0L, totalUsuarios);
+        Long totalNormal = usuarioRepository.countByTipo(TipoUsuario.NORMAL);
+        Long totalPresidente = usuarioRepository.countByTipo(TipoUsuario.PRESIDENTE);
+        Long totalUsuarios = totalNormal + totalPresidente;
+        return new ResultadoVotacaoDTO(0L, 0L, 0L, 0L, totalUsuarios);
     }
     
     // Listar todos os votos da votação ativa
@@ -133,5 +141,15 @@ public class UsuarioVotacaoService {
         dto.setVotacaoId(uv.getVotacao().getId());
         dto.setVotacaoAtiva(uv.getVotacao().getVotacaoAtiva());
         return dto;
+    }
+
+    private void validarPermissaoParaVotar(Usuario usuario) {
+        if (usuario.getTipo() == TipoUsuario.ADMINISTRADOR) {
+            throw new RuntimeException(
+                String.format("Usuário ADMINISTRADOR não tem permissão para votar. Apenas NORMAL e PRESIDENTE podem votar.",
+                    usuario.getNome(), usuario.getTipo()
+                )
+            );
+        }
     }
 }

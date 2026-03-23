@@ -4,7 +4,6 @@ public enum TipoUsuario {
 
     NORMAL,
     PRESIDENTE,
-    VICE,
     ADMINISTRADOR
 
 }
