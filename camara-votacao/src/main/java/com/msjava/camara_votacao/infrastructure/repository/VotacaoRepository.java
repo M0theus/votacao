@@ -16,6 +16,8 @@ public interface VotacaoRepository extends JpaRepository<Votacao, Integer> {
     List<Votacao> findByDataCriacaoAfter(LocalDateTime data);
     List<Votacao> findByVotacaoAtivaFalse();
     List<Votacao> findByVotacaoAtivaTrue();
+    List<Votacao> findByDataCriacaoBetween(LocalDateTime inicio, LocalDateTime fim);
+    Votacao findTopByOrderByIdDesc();
 
     @Query("SELECT v FROM Votacao v WHERE DATE(v.dataCriacao) = DATE(:data)")
     List<Votacao> findByDataCriacao(@Param("data") LocalDateTime data);
